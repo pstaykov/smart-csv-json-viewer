@@ -141,7 +141,7 @@ function jsonToTree(data: any): string {
   }
 }
 
-/* ---------------- CSV TABLE VIEW ---------------- */
+/* ---------------- CSV TABLE VIEW (interactive) ---------------- */
 
 function getCsvWebviewContent(csvText: string): string {
   const parsed = Papa.parse(csvText.trim(), { header: true });
@@ -149,9 +149,6 @@ function getCsvWebviewContent(csvText: string): string {
   if (!data.length) return `<p>No CSV data found.</p>`;
 
   const headers = Object.keys(data[0]);
-  const rows = data.map(row => `
-    <tr>${headers.map(h => `<td>${escapeHtml(row[h])}</td>`).join('')}</tr>
-  `).join('');
 
   return `
     <!DOCTYPE html>
@@ -173,6 +170,30 @@ function getCsvWebviewContent(csvText: string): string {
           border-bottom: 1px solid var(--vscode-editorWidget-border, #555);
           padding-bottom: 0.3rem;
           margin-bottom: 1rem;
+        }
+
+        input, select, button {
+          margin-bottom: 0.8rem;
+          padding: 6px 10px;
+          background: var(--vscode-input-background);
+          color: var(--vscode-input-foreground);
+          border: 1px solid var(--vscode-input-border);
+          border-radius: 4px;
+        }
+
+        input { width: 40%; }
+        select { width: 40%; }
+
+        button {
+          cursor: pointer;
+          background: var(--vscode-button-background);
+          color: var(--vscode-button-foreground);
+          border: none;
+          margin-left: 0.5rem;
+        }
+
+        button:hover {
+          background: var(--vscode-button-hoverBackground);
         }
 
         table {
@@ -197,18 +218,87 @@ function getCsvWebviewContent(csvText: string): string {
         tr:hover {
           background: var(--vscode-list-hoverBackground, rgba(255,255,255,0.05));
         }
+
+        .controls {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          flex-wrap: wrap;
+          margin-bottom: 1rem;
+        }
       </style>
     </head>
     <body>
       <h2>CSV Table View</h2>
-      <table>
-        <thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
-        <tbody>${rows}</tbody>
+      <div class="controls">
+        <input type="text" id="filterInput" placeholder="Filter rows..." />
+        <select id="sortColumn">
+          ${headers.map(h => `<option value="${h}">${escapeHtml(h)}</option>`).join('')}
+        </select>
+        <button id="sortToggle" data-dir="asc">▲ Asc</button>
+      </div>
+
+      <table id="dataTable">
+        <thead>
+          <tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${data.map(row =>
+            `<tr>${headers.map(h => `<td>${escapeHtml(row[h])}</td>`).join('')}</tr>`
+          ).join('')}
+        </tbody>
       </table>
+
+      <script>
+        const table = document.getElementById('dataTable');
+        const input = document.getElementById('filterInput');
+        const select = document.getElementById('sortColumn');
+        const toggle = document.getElementById('sortToggle');
+
+        // Filter rows on input
+        input.addEventListener('input', () => {
+          const term = input.value.toLowerCase();
+          table.querySelectorAll('tbody tr').forEach(row => {
+            const visible = Array.from(row.cells).some(cell =>
+              cell.innerText.toLowerCase().includes(term)
+            );
+            row.style.display = visible ? '' : 'none';
+          });
+        });
+
+        // Sort table
+        function sortTable(direction) {
+          const column = select.value;
+          const idx = Array.from(table.querySelector('thead tr').cells)
+            .findIndex(th => th.textContent === column);
+
+          const rows = Array.from(table.querySelector('tbody').rows);
+
+          rows.sort((a, b) => {
+            const A = a.cells[idx].innerText.toLowerCase();
+            const B = b.cells[idx].innerText.toLowerCase();
+            return A.localeCompare(B) * direction;
+          });
+
+          const tbody = table.querySelector('tbody');
+          tbody.innerHTML = '';
+          rows.forEach(r => tbody.appendChild(r));
+        }
+
+        // Toggle sorting direction
+        toggle.addEventListener('click', () => {
+          const dir = toggle.dataset.dir === 'asc' ? 'desc' : 'asc';
+          toggle.dataset.dir = dir;
+          toggle.textContent = dir === 'asc' ? '▲ Asc' : '▼ Desc';
+          sortTable(dir === 'asc' ? 1 : -1);
+        });
+      </script>
     </body>
     </html>
   `;
 }
+
+
 
 function escapeHtml(unsafe: any): string {
   if (unsafe === null || unsafe === undefined) return '';
