@@ -2,7 +2,7 @@
   "name": "smart-csv-json-viewer",
   "displayName": "Smart CSV/JSON Viewer",
   "description": "A smart, interactive CSV and JSON viewer for Visual Studio Code — view, sort, filter, and explore data with ease right inside the editor.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "PeterStaykov",
   "engines": {
     "vscode": "^1.105.0"
