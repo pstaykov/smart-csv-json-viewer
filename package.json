@@ -4,6 +4,7 @@
   "description": "A smart, interactive CSV and JSON viewer for Visual Studio Code — view, sort, filter, and explore data with ease right inside the editor.",
   "version": "0.0.3",
   "publisher": "PeterStaykov",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.105.0"
   },
